@@ -1,0 +1,7 @@
+
+
+* Please download and install jre first:
+  from http://java.sun.com/javase/downloads/index.jsp
+  e.g. 'Java SE Runtime Environment 6u14'  
+* Then copy the executable and the log4j.properties to the directory where you want to put.
+* Create a link to the executable
