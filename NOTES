@@ -1,0 +1,32 @@
+
+
+* if 'TODO:' is done, add status info like 'TODO:DONE'
+
+
+
+20090807
+---------
+* TODO: refactor out run() code from the subclasses of MonitorableTask into upclass.
+        since we input different structure of data into specific tasks in run(), 
+        I think it would be better to use Map to include info about class name, general ip,
+        port if any, other string data. The drawback is that to it depends on each subclass
+        to parse the data, and finally, main program to parse the notification data.
+        
+        
+* TODO: exception handle suggestion, e.g. if exception happens, save log and configure file.
+* TODO: try to write some test classes and methods.
+
+
+* IDEA: how to be more productive? Implement the most important, scaffolding the rest!
+        from application RemoteMonitor, I spent too much time with unimportant details, 
+        e.g. class loader resource loading from top package, logging, 
+        nice function but not really useful.
+        e.g. manage multiple tasks 
+        
+
+ * REQ: use only one icon, prompt once turn red(failure) or green(ok) 
+ * TODO: use one DisplayDialog for all the process info? To avoid
+        bombard of message!
+        
+* EXP: see if possible to use enum, and how much is the code modification
+

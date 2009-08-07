@@ -7,6 +7,7 @@ public abstract class MonitorableTask extends Observable implements Runnable{
 	protected double present_status;
 	protected boolean is_verbose ;
 	
+	//Deprecate Thread methods, thus use suggested from sun.com
 	protected volatile Thread thisThread ;
 	protected boolean isThreadSuspended = false ;
 

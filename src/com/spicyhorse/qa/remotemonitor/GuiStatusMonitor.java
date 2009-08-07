@@ -1,3 +1,4 @@
+
 package com.spicyhorse.qa.remotemonitor;
 import java.awt.AWTException;
 import java.awt.CheckboxMenuItem;
@@ -62,6 +63,15 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	private static MenuItem newWebappTaskItem;
 
 	private static Menu allstatus;
+	
+    private static Image errorImage;
+    private static Image successImage;
+    private static Image failImage;
+    private static Image warnImage;
+    private static Image exceptionImage;
+	
+    private static Image greenImage;
+    private static Image redImage;
 
 	private final static String PAUSE_LABEL = "-_-i   Cease fire!";
 	private final static String REMOVE_LABEL = "#_#   Kill me!";
@@ -82,6 +92,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	// private static Menu tasksPlaceHolder ; // no running monitoring task, it
 	// shows empty, otherwise, show info.
 
+	// weak singleton implementation
 	public static GuiStatusMonitor getGUIStatusMonitor() throws Exception{
 		if (self == null){
 			self = new GuiStatusMonitor();
@@ -92,10 +103,23 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	private GuiStatusMonitor() throws Exception {
 		// old_status = "" ;
 		// new_status = "" ;
+		loadResources();
 		createAndShowGUI();
 		loadLastMonitoringTarget();
 	}
 
+    /// Load necessary images into cache
+    static void loadResources() throws IOException {
+            errorImage = createImage("/images/buildbot.gif","errorImage");
+            successImage = createImage("/images/buildbot-good.gif","successImage");
+            failImage = createImage("/images/buildbot-bad.gif","failImage");
+            warnImage = createImage("/images/buildbot-warn.gif","warnImage");
+            exceptionImage = createImage("/images/buildbot-exception.gif","exceptionImage");
+            
+            greenImage = createImage( "/images/green.jpg" , "tray icon green");
+            redImage = createImage( "/images/red.jpg" , "tray icon red");
+    }
+    
 	public static long extractThreadIDFromMenuLabel(String info) {
 		Pattern p = Pattern.compile("id:(\\d+)\\s+");
 		Matcher m = p.matcher(info);
@@ -154,8 +178,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		logger.debug(f.getParent());
 		logger.debug("=================root directory is " + u.toString());
 		
-		trayIcon = new TrayIcon(createImage( "/images/green.jpg" , "tray icon"));
-
+		trayIcon = new TrayIcon(greenImage);
+		
 		allstatus = new Menu("All Status");
 		newTaskItem = new Menu("New Task");
 		newPingTaskItem = new MenuItem(PING_STATUS_MONITORING_LABEL);
@@ -482,8 +506,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 									new_status));
 						}
 						if (tasks.size() == 0) {
-							trayIcon.setImage(createImage("/images/green.jpg",
-									new_status));
+							trayIcon.setImage(greenImage);
 						}
 					}
 					
@@ -567,16 +590,17 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	 * */
 	private String makeEntryLog(String label) {
 		StringBuffer entry = new StringBuffer();
+		String seperator = ":::" ;
 		if(label != null){
 			// append TASK_identity
 			if (label.contains("PingTask")){
 				entry.append("PINGTASK");
-				entry.append(":::");
+				entry.append(seperator);
 				
 				
 			}else if(label.contains("WebApplicationMonitor")){
 				entry.append("WEBAPPTASK");
-				entry.append(":::");
+				entry.append(seperator);
 			}
 			
 			// append ip:::port:::
@@ -587,12 +611,12 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 				if (item.contains(":")){
 					String tcpip[] = item.split(":");
 					entry.append(tcpip[0]);
-					entry.append(":::");
+					entry.append(seperator);
 					entry.append(tcpip[1]);
 				}else{
 					entry.append(item);
 				}
-				entry.append(":::");
+				entry.append(seperator);
 			}
 			
 			// append freq.
@@ -626,7 +650,6 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
 		
 		
 //		String pingTaskRec = "PINGTASK:::192.168.6.111:::5000";
