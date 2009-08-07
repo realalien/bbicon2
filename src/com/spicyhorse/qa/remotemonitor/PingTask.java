@@ -10,26 +10,26 @@ import org.apache.log4j.Logger;
 //TODO: use enum instead of string
 public class PingTask extends MonitorableTask {
 
-	private String ping_ip = null ;
+	private String ip = null ;
 	
 	static Logger logger = Logger.getLogger(PingTask.class);
 	public PingTask(long sleep, String ping_addr){
 		this.thisThread = new Thread(this);
 		this.sleep_timeout = sleep ;
-		this.ping_ip = ping_addr ;
+		this.ip = ping_addr ;
 	}
 	
 	public PingTask(String ping_addr){
 		super(); 
-		this.ping_ip = ping_addr ;
+		this.ip = ping_addr ;
 	}
 	@Override
 	public void run() {
 		Thread holder = Thread.currentThread();
 		try {
 			while(holder == this.thisThread){
-				logger.debug("Pinging " + this.ping_ip +" from Thread at interval " + this.sleep_timeout +" : " + Thread.currentThread().getId());
-				boolean isOK = ping(this.ping_ip);
+				logger.debug("Pinging " + this.ip +" from Thread at interval " + this.sleep_timeout +" : " + Thread.currentThread().getId());
+				boolean isOK = ping(this.ip);
 				Thread.sleep(this.sleep_timeout) ;
 				
 				synchronized(this) {
@@ -38,11 +38,11 @@ public class PingTask extends MonitorableTask {
 	            }
 				String demo_status = "";
 				if(isOK){
-					demo_status = "PingTask.DOWN of " + this.ping_ip ;
+					demo_status = "PingTask.OK of " + this.ip ;
 				}else{
-					demo_status = "PingTask.OK of " + this.ping_ip ;
+					demo_status = "PingTask.DOWN of " + this.ip ;
 				}
-				logger.debug("Ping " + this.ping_ip + ", got " + demo_status);
+				logger.debug("Ping " + this.ip + ", got " + demo_status);
 				setChanged();
 				notifyObservers(demo_status);
 			}
