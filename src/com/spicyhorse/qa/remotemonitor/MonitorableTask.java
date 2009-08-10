@@ -4,8 +4,11 @@ import java.util.Observable;
 
 public abstract class MonitorableTask extends Observable implements Runnable{
 	protected long sleep_timeout;  // in milli-second
-	protected double present_status;
+	protected double present_status;  //may be soon deprecated
 	protected boolean is_verbose ;
+	
+	protected StatusMessage status_msg ;
+	
 	
 	//Deprecate Thread methods, thus use suggested from sun.com
 	protected volatile Thread thisThread ;

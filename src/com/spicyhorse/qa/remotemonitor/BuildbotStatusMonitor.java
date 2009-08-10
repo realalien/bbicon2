@@ -88,6 +88,7 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 				if (isOK) {
 					demo_status = "Builder.OK of " + this.ip + ":" + this.port
 							+ " " + this.builder;
+					status_msg = new StatusMessage(this.thisThread.getId(),"Builder.UP", demo_status);
 					logger
 							.debug("goes to ok, builder's status: "
 									+ this.status);
@@ -95,14 +96,16 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 				} else {
 					demo_status = "Builder.DOWN of " + this.ip + ":"
 							+ this.port + " " + this.builder;
+					
 					logger.debug("goes to error, builder's status: "
 							+ this.status);
+					status_msg = new StatusMessage(this.thisThread.getId(),"Builder.DOWN", demo_status);
 				}
 
 				logger.debug("Builder status: " + this.ip + ", got "
 						+ demo_status);
 				setChanged();
-				notifyObservers(demo_status);
+				notifyObservers(status_msg);
 			}
 		} catch (InterruptedException e) {
 			logger.error(e.getMessage());
