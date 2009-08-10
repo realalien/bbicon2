@@ -42,16 +42,17 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 
 	private String ip = null;
 	private String port = null;
-	private String builder = null ;
+	private String builder = null;
 	private Status status;
 
 	static Logger logger = Logger.getLogger(BuildbotStatusMonitor.class);
 
-    private static Matcher s_matcher = Pattern.compile(
-            "(success|warn|fail|exception)",
-            Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher("");
-    
-	public BuildbotStatusMonitor(long sleep, String ping_addr, String port, String builder) {
+	private static Matcher s_matcher = Pattern.compile(
+			"(success|warn|fail|exception)",
+			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher("");
+
+	public BuildbotStatusMonitor(long sleep, String ping_addr, String port,
+			String builder) {
 		this.thisThread = new Thread(this);
 		this.sleep_timeout = sleep;
 		this.ip = ping_addr;
@@ -62,17 +63,16 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 	public BuildbotStatusMonitor(String ping_addr) {
 		super();
 		this.ip = ping_addr;
-		this.port = "80";
+		this.port = "9911";
 	}
-
 
 	@Override
 	public void run() {
 		Thread holder = Thread.currentThread();
 		try {
 			while (holder == thisThread) {
-				System.out.println("Web status detecting " + this.ip + ":"
-						+ this.port + " from Thread at interval "
+				System.out.println("Buildbot builder detecting " + this.ip
+						+ ":" + this.port + " from Thread at interval "
 						+ this.sleep_timeout + " : " + Thread.currentThread());
 				boolean isOK = buildbotstatus(this.ip, this.port, this.builder);
 				Thread.sleep(this.sleep_timeout);
@@ -80,22 +80,27 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 				synchronized (this) {
 					while (isThreadSuspended())
 						Thread.sleep(this.sleep_timeout); // Notes: do not use
-															// wait() as we have
-															// no shared monitor
+					// wait() as we have
+					// no shared monitor
 				}
 
 				String demo_status = "";
 				if (isOK) {
-					demo_status = "WebStatus.DOWN of " + this.ip + ":"
-							+ this.port;
+					demo_status = "Builder.OK of " + this.ip + ":" + this.port
+							+ " " + this.builder;
+					logger
+							.debug("goes to ok, builder's status: "
+									+ this.status);
+
 				} else {
-					demo_status = "WebStatus.OK of " + this.ip + ":"
-							+ this.port;
+					demo_status = "Builder.DOWN of " + this.ip + ":"
+							+ this.port + " " + this.builder;
+					logger.debug("goes to error, builder's status: "
+							+ this.status);
 				}
 
-//				demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
-//						+ this.port;
-				logger.debug("WebStatus " + this.ip + ", got " + demo_status);
+				logger.debug("Builder status: " + this.ip + ", got "
+						+ demo_status);
 				setChanged();
 				notifyObservers(demo_status);
 			}
@@ -106,50 +111,51 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 	}
 
 	private boolean buildbotstatus(String pingIp, String port2, String builder2) {
-		// TODO Auto-generated method stub
-		try{ this.computeBuildStatus();}catch (Exception e){
-			logger.error("BuildbotStatusMonitor caught an exception.\n" + e.getMessage());
+		try {
+			this.computeBuildStatus();
+		} catch (Exception e) {
+			logger.error("BuildbotStatusMonitor caught an exception.\n"
+					+ e.getMessage());
 		}
-		if (this.status == null || this.status.toString() != "SUCCESS"){
-			return false ;
-		}else{
+		if (this.status == null || this.status.toString() != "SUCCESS") {
+			return false;
+		} else {
 			return true;
 		}
 	}
-	
-	
-    /// Compute build status by searching the HTML page for keywords
-	// we only use 
-    private void computeBuildStatus() throws Exception  {
-           URL url = new URL("http://"+this.ip+":"+this.port);
-    	
-            BufferedReader in = new BufferedReader(new InputStreamReader(url
-                            .openStream()));
-            String l;
-            Status new_status = null;
 
-            while ((l = in.readLine()) != null) {
-                    s_matcher.reset(l);
+	// / Compute build status by searching the HTML page for keywords
+	private void computeBuildStatus() throws Exception {
+		URL url = new URL("http://" + this.ip + ":" + this.port
+				+ "/one_box_per_builder?" + this.builder);
+		logger.debug("url: " + url.toString());
+		BufferedReader in = new BufferedReader(new InputStreamReader(url
+				.openStream()));
+		String l;
+		Status new_status = null;
 
-                    while (s_matcher.find()) {
-                            String s = s_matcher.group(1);
+		while ((l = in.readLine()) != null) {
+			s_matcher.reset(l);
+			while (s_matcher.find()) {
+				if (l.toLowerCase().contains(this.builder.toLowerCase())) {
+					logger.debug(l + s_matcher.group(1));
+					String s = s_matcher.group(1);
+					for (Status st : Status.values()) {
+						if (s.equalsIgnoreCase(st.name())) {
+							new_status = st;
+						}
+					}
+				}
+			}
+		}
 
-                            for (Status st : Status.values()) {
-                                    if ((new_status == null || st.ordinal() > new_status
-                                                    .ordinal())
-                                                    && s.equalsIgnoreCase(st.name())) {
-                                            new_status = st;
-                                    }
-                            }
-                    }
-            }
+		in.close();
 
-            in.close();
-
-            this.status = new_status;
-    }
+		this.status = new_status;
+	}
 
 }
+
 enum Status {
-    SUCCESS, WARN, FAIL, EXCEPTION, CONNECT_ERROR
+	SUCCESS, WARN, FAIL, EXCEPTION, CONNECT_ERROR
 }

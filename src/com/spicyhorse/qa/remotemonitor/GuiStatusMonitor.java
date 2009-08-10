@@ -22,10 +22,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,7 +47,16 @@ import org.apache.log4j.Logger;
 //TODO: add logging
 
 //TODO: add shortcut keys
-public class GuiStatusMonitor implements Observer {  // no need to make this class multithread!
+public class GuiStatusMonitor implements Observer {  
+	
+	private static final String STR_INTERNAL_WEBAPPTASK = "WEBAPPTASK";
+	private static final String STR_INTERNAL_PINGTASK = "PINGTASK";
+	private static final String STR_INTERNAL_BUILDBOT = "BUILDBOT";
+	
+	//to gather all the down threadinfo, remeber to clean if one thread turns ok
+	private static Map<Integer, String> downThreads = new TreeMap<Integer,String>();
+
+// no need to make this class multithread!
 	
 	static Logger logger = Logger.getLogger(GuiStatusMonitor.class);
 
@@ -61,9 +72,11 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	private static Menu newTaskItem;
 	private static MenuItem newPingTaskItem;
 	private static MenuItem newWebappTaskItem;
-
+	private static MenuItem newBuildbotBuildTaskItem;
+	
 	private static Menu allstatus;
 	
+	//not in use
     private static Image errorImage;
     private static Image successImage;
     private static Image failImage;
@@ -80,7 +93,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	private final static String REMEMBER_TARGET_LABEL = "@_@  Always Monitoring!";
 	private final static String PING_STATUS_MONITORING_LABEL = "Ping Status Monitoring";
 	private final static String WEB_APPLICATION_STATUS_MONITORING_LABEL = "Web application Status Monitoring";
-
+	private final static String BUILDBOT_STATUS_MONITOR_LABEL = "Buildbot Builder's Status Monitoring";
+	
 	final static SystemTray tray = SystemTray.getSystemTray();
 	private static final String LAST_MONITOR_TARGETS_INI = "last_monitor_targets.ini";
 
@@ -88,6 +102,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	
 	ActionListener subtasksListener ;  //  listening for 'pause, kill, remember target' buttons actions.
 	//ATTE: do not confused with 'newTaskListener', which is listening for 'new XXXX monitoring' actions.
+
+
 	
 	// private static Menu tasksPlaceHolder ; // no running monitoring task, it
 	// shows empty, otherwise, show info.
@@ -116,8 +132,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
             warnImage = createImage("/images/buildbot-warn.gif","warnImage");
             exceptionImage = createImage("/images/buildbot-exception.gif","exceptionImage");
             
-            greenImage = createImage( "/images/green.jpg" , "tray icon green");
-            redImage = createImage( "/images/red.jpg" , "tray icon red");
+            greenImage = createImage("/images/buildbot-good.gif","failImage"); //createImage( "/images/green.jpg" , "tray icon green");
+            redImage = createImage("/images/buildbot-bad.gif","errorImage"); //createImage( "/images/red.jpg" , "tray icon red");
     }
     
 	public static long extractThreadIDFromMenuLabel(String info) {
@@ -185,7 +201,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		newPingTaskItem = new MenuItem(PING_STATUS_MONITORING_LABEL);
 		newWebappTaskItem = new MenuItem(
 				WEB_APPLICATION_STATUS_MONITORING_LABEL);
-
+		newBuildbotBuildTaskItem = new MenuItem(BUILDBOT_STATUS_MONITOR_LABEL);
 		aboutItem = new MenuItem("About");
 		exitItem = new MenuItem("Exit");
 		
@@ -202,6 +218,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		popup.add(newTaskItem);
 		newTaskItem.add(newPingTaskItem);
 		newTaskItem.add(newWebappTaskItem);
+		newTaskItem.add(newBuildbotBuildTaskItem);
 		popup.addSeparator();
 		popup.add(aboutItem);
 		popup.add(exitItem);
@@ -328,7 +345,9 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 			};
 
 		class NewTaskListener implements ActionListener {
-            /** Notes: 
+
+
+			/** Notes: 
              * 		The instance property of the inner class was originally introduced as clause 'produce_task()'
              * should allow a new task accepting an Observer(or Observer's subclasses). As we used this class
 			 * as inner class due to references of GUI component, thus no need for this property 'observer'.
@@ -339,6 +358,9 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 					this.observer = obs;
 				}
 			 */
+			
+			// TODO: with each new kind of task introduced, this method becomes rather fat,
+			// see how to smell good
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				MenuItem item = (MenuItem) e.getSource();
@@ -348,9 +370,11 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 				if (pressedItemLabel.contains("Monitoring")) {
 					// add a thread and update GUI
 					String ip = JOptionPane.showInputDialog("Please input a ip");
-					String freqInput = JOptionPane.showInputDialog("Please input a timeout");
+					String freqInput = JOptionPane.showInputDialog("Please input a timeout(in second)");
 					String default_website_port = "80";
+					String default_buildbot_port = "9911";
 					String port = null ;
+					String builder = null ;
 					if (pressedItemLabel.contains(WEB_APPLICATION_STATUS_MONITORING_LABEL)){
 						port = JOptionPane
 						.showInputDialog("Please input a web application listening port");
@@ -358,25 +382,38 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 							port = default_website_port;
 						}
 					}
+					if (pressedItemLabel.contains(BUILDBOT_STATUS_MONITOR_LABEL)){
+						port = JOptionPane
+						.showInputDialog("Please input a web application listening port");
+						if (! isNumeric(port)){
+							port = default_buildbot_port;
+						}
+						builder = JOptionPane
+						.showInputDialog("Please input the builder name you want to monitor");
+					}
 					
+					//construct basic info to create corresponding thread.
 					long time_out = 5000; // if no assign
 					try {
-						time_out = Long.parseLong(freqInput);
+						time_out = Long.parseLong(freqInput) * 1000;
 					} catch (NumberFormatException exp) {
-						time_out = 5000;
+						time_out = 15000;
 					}
 					if (ip != null) { // TODO:validate IP
 						StringBuffer data = new StringBuffer();
 						if (item.getLabel().equals(PING_STATUS_MONITORING_LABEL)) {
-							data.append("PINGTASK");
+							data.append(STR_INTERNAL_PINGTASK);
 						} else if (item.getLabel().equals(WEB_APPLICATION_STATUS_MONITORING_LABEL)) {
-							data.append("WEBAPPTASK");
+							data.append(STR_INTERNAL_WEBAPPTASK);
+						} else if (item.getLabel().equals(BUILDBOT_STATUS_MONITOR_LABEL)) {
+							data.append(STR_INTERNAL_BUILDBOT);
 						}
 						data.append(":::");
 						data.append(ip);
 						data.append(":::");
 						if (port != null) {data.append(port); data.append(":::");}
 						data.append(time_out);
+						if (builder != null ) {data.append(":::"); data.append(builder) ;}
 						
 						Thread thread = produce_task(data.toString());
 						if (thread != null){
@@ -385,6 +422,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 								+ " => reaching:" + ip ;
 							if(port!=null){ threadInfo = threadInfo + ":" + port ;}
 							threadInfo = threadInfo +  " freq.:" + freqInput ;
+							if(builder!=null){ threadInfo = threadInfo + " builder name:" + builder ;}
+							
 							trayIcon.displayMessage("Created!", threadInfo,
 									TrayIcon.MessageType.INFO);
 						}else{
@@ -406,7 +445,8 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 
 		newPingTaskItem.addActionListener(newTaskListener);
 		newWebappTaskItem.addActionListener(newTaskListener);
-
+		newBuildbotBuildTaskItem.addActionListener(newTaskListener);
+		
 		exitItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Object[] options = { "Yes, quit the program!",
@@ -484,26 +524,26 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 	public void update(Observable target, Object status) {
 		if (status instanceof String) {
 			new_status = (String) status; // variable for reuse
-			if (new_status != old_status) {
-				logger.debug("------update: changing status to new : "
-						+ new_status + " from old: " + old_status);
-				logger.debug("READY TO CALL SwingUtilities.invokeLater >>>>>>>>>>>>>>>>");
+//			if (new_status != old_status) {
+//				logger.debug("------update: changing status to new : "
+//						+ new_status + " from old: " + old_status);
+//
+////				if (SwingUtilities.isEventDispatchThread()) {
+////					logger.debug("******* it's isEventDispatchThread");
+////				} else {
+////					logger.debug("******* it's not isEventDispatchThread"); // this
+////				}
 
-				if (SwingUtilities.isEventDispatchThread()) {
-					logger.debug("******* it's isEventDispatchThread");
-				} else {
-					logger.debug("******* it's not isEventDispatchThread"); // this
-				}
+
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run() {
 						logger.debug("------update: invoke runnalbe for update GUI!");
 						if (new_status != null && new_status.contains("DOWN")) {
 							
-							trayIcon.displayMessage("Failed network! ",
+							trayIcon.displayMessage("Detected an exception.! ",
 									new_status,
 									TrayIcon.MessageType.WARNING);
-							trayIcon.setImage(createImage("/images/red.jpg",
-									new_status));
+							trayIcon.setImage(redImage);
 						}
 						if (tasks.size() == 0) {
 							trayIcon.setImage(greenImage);
@@ -511,15 +551,16 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 					}
 					
 				});
-				old_status = new_status;
+//				old_status = new_status;
 			} else {
-				logger.debug("from observer: " + old_status
-						+ " no change.");
+				logger.debug("no status got!");
+//				logger.debug("from observer: " + old_status
+//						+ " no change.");
 			}
 		}
 		
 		// logger.debug("from observer: " + new_status);
-	}
+//	}
 
 	
 	// I forgot why I was trying to implement GUIstatusMonitor a multithread,
@@ -594,12 +635,13 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		if(label != null){
 			// append TASK_identity
 			if (label.contains("PingTask")){
-				entry.append("PINGTASK");
+				entry.append(STR_INTERNAL_PINGTASK);
 				entry.append(seperator);
-				
-				
 			}else if(label.contains("WebApplicationMonitor")){
-				entry.append("WEBAPPTASK");
+				entry.append(STR_INTERNAL_WEBAPPTASK);
+				entry.append(seperator);
+			}else if(label.contains(STR_INTERNAL_BUILDBOT)){
+				entry.append(STR_INTERNAL_BUILDBOT);
 				entry.append(seperator);
 			}
 			
@@ -625,7 +667,17 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 			if(m.find()){
 				String freq = label.substring(m.start() + 6,m.end()).trim(); 
 					entry.append(freq);
+					entry.append(seperator);
 			}
+			
+			// append builder.
+			pat = Pattern.compile("builder:.*");
+			m = pat.matcher(label);
+			if(m.find()){
+				String buidler = label.substring(m.start() + 8,m.end()).trim(); 
+					entry.append(buidler);
+			}
+			
 		}
 		logger.debug("Before writting to file, we got an entry: " + entry);
 		return entry.toString();
@@ -645,6 +697,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 			}
 			fr.close();
 			bw.close();
+			logger.info("Loaded last monitor target from:" + LAST_MONITOR_TARGETS_INI);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace(); //TODO: do not use GUI, pass silently, or use logging.
 		} catch (IOException e) {
@@ -685,10 +738,10 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 		String ip = null;
 		Long  freq = null;
 		String port = null ; //only applicable to WEBAPPTASK
-
+		String builder = null ; // only applicable to BUILDBOT task
 		//create threads
 		MonitorableTask task = null ;
-		if (task_category.equals("PINGTASK") ){
+		if (task_category.equals(STR_INTERNAL_PINGTASK) ){
 			ip = info[1];
 			freq = Long.parseLong(info[2]);
 			
@@ -697,7 +750,7 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 			}
 			task =new PingTask(freq, ip);
 			
-		}else if( task_category.equals("WEBAPPTASK")){
+		}else if( task_category.equals(STR_INTERNAL_WEBAPPTASK)){
 			ip = info[1];
 			port = info[2];
 			freq = Long.parseLong(info[3]);
@@ -705,15 +758,26 @@ public class GuiStatusMonitor implements Observer {  // no need to make this cla
 				return null;
 			}
 			task =new WebApplicationMonitor(freq, ip, port);
+		}else if( task_category.equals(STR_INTERNAL_BUILDBOT)){
+			ip = info[1];
+			port = info[2];
+			freq = Long.parseLong(info[3]);
+			builder = info[4];
+			if (ip == null || freq == null || port == null || builder == null) {
+				return null;
+			}
+			task =new BuildbotStatusMonitor(freq, ip, port, builder);
 		}
 		
 		if (task != null) {
 			Thread thread = task.getThisThread();
 			//ESP: do NOT change the thread info for label, as it is used to extract info.
-			String threadInfo = task.getClass().toString().replace("class", "") + " id:" + task.getThisThread().getId() + "  "  
+			String threadInfo = task_category + " id:" + task.getThisThread().getId() + "  "  
 								+ " => reaching:" + ip ;
 			if (port != null ) { threadInfo = threadInfo + ":" + port ;}
 			threadInfo = threadInfo + " freq.:" + freq ;
+			if (builder != null ) { threadInfo = threadInfo + " builder:" + builder ;}
+
 			// hidden info: task.getThisThread().getName() + " id:"  + task.getThisThread().getId() 
 			// add to thread pool
 			tasks.add(task);

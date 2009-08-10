@@ -57,6 +57,8 @@ public class PingTask extends MonitorableTask {
 	
 	public static boolean ping(String name) throws UnknownHostException, IOException{
 		InetAddress machine = InetAddress.getByName(name); 
-		return machine.isReachable(10000);
+		boolean ok = machine.isReachable(10000);
+		logger.debug("----------------- ok in ping? " + ok);
+		return ok;
 	}
 }

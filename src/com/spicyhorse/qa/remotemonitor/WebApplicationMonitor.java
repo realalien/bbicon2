@@ -52,11 +52,11 @@ public class WebApplicationMonitor extends MonitorableTask implements Runnable {
 
 				String demo_status = "";
 				if (isOK) {
-					demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
-							+ this.port;
-				} else {
 					demo_status = "WebStatus.OK of " + this.ping_ip + ":"
-							+ this.port;
+					+ this.port;
+				} else {
+					demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
+					+ this.port;
 				}
 
 //				demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
