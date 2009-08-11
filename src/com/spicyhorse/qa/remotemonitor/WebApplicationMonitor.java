@@ -54,16 +54,24 @@ public class WebApplicationMonitor extends MonitorableTask implements Runnable {
 				if (isOK) {
 					demo_status = "WebStatus.OK of " + this.ping_ip + ":"
 					+ this.port;
+					status_msg = new StatusMessage(this.thisThread.getId(),"WebStatus.OK", demo_status);
+					logger
+							.debug("goes to up, builder's status: "
+									+ this.status_msg.getData());
 				} else {
 					demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
 					+ this.port;
+					status_msg = new StatusMessage(this.thisThread.getId(),"WebStatus.DOWN", demo_status);
+					logger
+							.debug("goes to up, builder's status: "
+									+ this.status_msg.getData());
 				}
 
 //				demo_status = "WebStatus.DOWN of " + this.ping_ip + ":"
 //						+ this.port;
 				logger.debug("WebStatus " + this.ping_ip + ", got " + demo_status);
 				setChanged();
-				notifyObservers(demo_status);
+				notifyObservers(status_msg);
 			}
 		} catch (UnknownHostException e) {
 			logger.error(e.getMessage());

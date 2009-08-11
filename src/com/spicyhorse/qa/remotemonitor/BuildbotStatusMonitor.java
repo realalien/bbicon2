@@ -28,11 +28,8 @@
 package com.spicyhorse.qa.remotemonitor;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,7 +40,7 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 	private String ip = null;
 	private String port = null;
 	private String builder = null;
-	private Status status;
+
 
 	static Logger logger = Logger.getLogger(BuildbotStatusMonitor.class);
 

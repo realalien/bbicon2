@@ -588,12 +588,11 @@ public class GuiStatusMonitor implements Observer {
 			SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
 					logger
-							.debug("------update: invoke runnalbe for update GUI!");
+							.debug("------update: invoke runnalbe for update GUI! Status :" + new_status.getId() +  " " + new_status.getStatus() +" " + new_status.getData());
 					if (new_status != null && new_status.isDown()) {
-						trayIcon.displayMessage("Detected an exception.! ",
+						trayIcon.displayMessage("Detected an exception! ",
 								new_status.getData(),
 								TrayIcon.MessageType.WARNING);
-						trayIcon.setImage(redImage);
 						downThreads.put(new_status.getId(), new_status);
 					}
 					if (new_status != null && new_status.getId() > 0
@@ -602,9 +601,12 @@ public class GuiStatusMonitor implements Observer {
 							downThreads.remove(new_status.getId());
 						}
 					}
-					logger.debug("down threads : " + downThreads.toString());
+					logger.debug("down threads item : " + downThreads.toString());
 					if (tasks.size() == 0 || downThreads.size() == 0) {
 						trayIcon.setImage(greenImage);
+						
+					}else{
+						trayIcon.setImage(redImage);
 					}
 				}
 
@@ -617,68 +619,6 @@ public class GuiStatusMonitor implements Observer {
 		}
 	}
 
-	// if (status instanceof String) {
-	// new_status = (String) status; // variable for reuse
-	// // if (new_status != old_status) {
-	// // logger.debug("------update: changing status to new : "
-	// // + new_status + " from old: " + old_status);
-	// //
-	// //// if (SwingUtilities.isEventDispatchThread()) {
-	// //// logger.debug("******* it's isEventDispatchThread");
-	// //// } else {
-	// //// logger.debug("******* it's not isEventDispatchThread"); // this
-	// //// }
-	//
-	//
-	// SwingUtilities.invokeLater(new Runnable() {
-	// public void run() {
-	// logger.debug("------update: invoke runnalbe for update GUI!");
-	// if (new_status != null && new_status.contains("DOWN")) {
-	//							
-	// trayIcon.displayMessage("Detected an exception.! ",
-	// new_status,
-	// TrayIcon.MessageType.WARNING);
-	// trayIcon.setImage(redImage);
-	// }
-	// if (tasks.size() == 0) {
-	// trayIcon.setImage(greenImage);
-	// }
-	// }
-	//					
-	// });
-	// // old_status = new_status;
-	// } else {
-	// logger.debug("no status got!");
-	// // logger.debug("from observer: " + old_status
-	// // + " no change.");
-	// }
-	// }
-
-	// logger.debug("from observer: " + new_status);
-	// }
-
-	// I forgot why I was trying to implement GUIstatusMonitor a multithread,
-	// I also find that there are no need to make task multithread, just put
-	// those tasks in a sleep mode and reading a suspend switch!
-	// @Override
-	// public void run() {
-	// while (true) {
-	//
-	// System.out
-	// .println("------run: Detecting every 10 sec. ....detecting: staus="
-	// + new_status + "!");
-	//
-	// try {
-	// Thread.sleep(5000);
-	// } catch (InterruptedException e) {
-	// logger.debug("observer intrrupted!");
-	// }
-	// if (tasks.size() == 0 ){ // make sure its color is right
-	// trayIcon.setImage(createImage("/images/green.jpg",
-	// new_status));
-	// }
-	// }
-	// }
 
 	/**
 	 * To write tasks to a file for reloading next time Note: * I think just

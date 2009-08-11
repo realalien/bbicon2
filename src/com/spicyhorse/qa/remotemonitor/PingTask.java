@@ -39,12 +39,20 @@ public class PingTask extends MonitorableTask {
 				String demo_status = "";
 				if(isOK){
 					demo_status = "PingTask.OK of " + this.ip ;
+					status_msg = new StatusMessage(this.thisThread.getId(),"PingTask.OK", demo_status);
+					logger
+							.debug("goes to up, builder's status: "
+									+ this.status_msg.getData());
 				}else{
 					demo_status = "PingTask.DOWN of " + this.ip ;
+					status_msg = new StatusMessage(this.thisThread.getId(),"PingTask.DOWN", demo_status);
+					logger
+							.debug("goes to down, builder's status: "
+									+ this.status_msg.getData());
 				}
 				logger.debug("Ping " + this.ip + ", got " + demo_status);
 				setChanged();
-				notifyObservers(demo_status);
+				notifyObservers(status_msg);
 			}
 		} catch (UnknownHostException e) {
 			e.printStackTrace();

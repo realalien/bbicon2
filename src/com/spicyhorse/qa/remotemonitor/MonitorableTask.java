@@ -6,7 +6,7 @@ public abstract class MonitorableTask extends Observable implements Runnable{
 	protected long sleep_timeout;  // in milli-second
 	protected double present_status;  //may be soon deprecated
 	protected boolean is_verbose ;
-	
+	protected Status status;
 	protected StatusMessage status_msg ;
 	
 	
