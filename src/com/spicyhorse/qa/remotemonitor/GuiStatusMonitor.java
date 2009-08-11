@@ -420,9 +420,9 @@ public class GuiStatusMonitor implements Observer {
 				if (pressedItemLabel.contains("Monitoring")) {
 					// add a thread and update GUI
 					String ip = JOptionPane
-							.showInputDialog("Please input a ip");
+							.showInputDialog("IP");
 					String freqInput = JOptionPane
-							.showInputDialog("Please input a timeout(in second)");
+							.showInputDialog("Frequency (in second)");
 					String default_website_port = "80";
 					String default_buildbot_port = "9911";
 					String port = null;
@@ -430,7 +430,7 @@ public class GuiStatusMonitor implements Observer {
 					if (pressedItemLabel
 							.contains(WEB_APPLICATION_STATUS_MONITORING_LABEL)) {
 						port = JOptionPane
-								.showInputDialog("Please input a web application listening port");
+								.showInputDialog("Port");
 						if (!isNumeric(port)) {
 							port = default_website_port;
 						}
@@ -438,12 +438,12 @@ public class GuiStatusMonitor implements Observer {
 					if (pressedItemLabel
 							.contains(BUILDBOT_STATUS_MONITOR_LABEL)) {
 						port = JOptionPane
-								.showInputDialog("Please input a web application listening port");
+								.showInputDialog("Port");
 						if (!isNumeric(port)) {
 							port = default_buildbot_port;
 						}
 						builder = JOptionPane
-								.showInputDialog("Please input the builder name you want to monitor");
+								.showInputDialog("Builder name");
 					}
 
 					// construct basic info to create corresponding thread.
@@ -497,7 +497,7 @@ public class GuiStatusMonitor implements Observer {
 						} else {
 							trayIcon.displayMessage(
 									"Failed to create a thread! ",
-									"Unable to create a thread with data "
+									"Unable to create a thread with data! "
 											+ data.toString(),
 									TrayIcon.MessageType.ERROR);
 						}
