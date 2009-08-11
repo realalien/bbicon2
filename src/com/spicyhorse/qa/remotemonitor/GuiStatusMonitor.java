@@ -3,6 +3,7 @@ package com.spicyhorse.qa.remotemonitor;
 import java.awt.AWTException;
 import java.awt.CheckboxMenuItem;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Image;
 import java.awt.Menu;
 import java.awt.MenuItem;
@@ -18,11 +19,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
@@ -62,6 +64,7 @@ public class GuiStatusMonitor implements Observer {
 
 	private static List<MonitorableTask> tasks = new ArrayList<MonitorableTask>();
 
+	// not in use
 	private static String old_status;
 	private static StatusMessage new_status;
 
@@ -101,7 +104,8 @@ public class GuiStatusMonitor implements Observer {
 	private static GuiStatusMonitor self; // singleton impl.
 
 	ActionListener subtasksListener; // listening for 'pause, kill, remember
-										// target' buttons actions.
+
+	// target' buttons actions.
 
 	// ATTE: do not confused with 'newTaskListener', which is listening for 'new
 	// XXXX monitoring' actions.
@@ -135,13 +139,13 @@ public class GuiStatusMonitor implements Observer {
 				"exceptionImage");
 
 		greenImage = createImage("/images/buildbot-good.gif", "failImage"); // createImage(
-																			// "/images/green.jpg"
-																			// ,
-																			// "tray icon green");
+		// "/images/green.jpg"
+		// ,
+		// "tray icon green");
 		redImage = createImage("/images/buildbot-bad.gif", "errorImage"); // createImage(
-																			// "/images/red.jpg"
-																			// ,
-																			// "tray icon red");
+		// "/images/red.jpg"
+		// ,
+		// "tray icon red");
 	}
 
 	public static long extractThreadIDFromMenuLabel(String info) {
@@ -168,14 +172,20 @@ public class GuiStatusMonitor implements Observer {
 		}
 	}
 
-	public void removeFromThreadPool(long threadID) {
+	public static void removeFromDownThreads(long threadID) {
+		if (downThreads.containsKey(threadID)) {
+			downThreads.remove(threadID);
+		}
+	}
+
+	public static void removeFromThreadPool(long threadID) {
 		Iterator<MonitorableTask> iter = tasks.iterator();
 		while (iter.hasNext()) {
 			MonitorableTask pt2remove = (MonitorableTask) iter.next();
 			Thread thread = pt2remove.getThisThread();
 			if (thread.getId() == threadID) {
 				pt2remove.stop(); // ESP: can use thread.destroy() which is
-									// deprecated.
+				// deprecated.
 				iter.remove();
 				logger.debug("threadID:" + threadID + " was killed! ");
 				logger
@@ -233,6 +243,8 @@ public class GuiStatusMonitor implements Observer {
 		popup.add(exitItem);
 
 		trayIcon.setPopupMenu(popup);
+		trayIcon
+				.setToolTip("Click me to get all status monitors in DOWN status!");
 
 		try {
 			tray.add(trayIcon);
@@ -244,9 +256,55 @@ public class GuiStatusMonitor implements Observer {
 
 		trayIcon.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane
-						.showMessageDialog(null,
-								"IP & Webapp Availability Monitor v0.1 for SpicyHorse QA.");
+				if (downThreads.size() == 0) {
+					JOptionPane.showMessageDialog(null, "Everything is OK!");
+				} else {
+					// only goes to the web page if thread is a builder
+					StringBuffer sb = new StringBuffer();
+					Iterator it = downThreads.entrySet().iterator();
+					while (it.hasNext()) {
+						Map.Entry pairs = (Map.Entry) it.next();
+						Object threadId= pairs.getKey();
+						if (threadId instanceof Long){
+							threadId = (Long)threadId ;
+						}
+						StatusMessage sm_temp = (StatusMessage)pairs.getValue();
+						
+						logger.debug(sm_temp.getCategory() + " ......");
+						if (sm_temp.getCategory() == BuildbotStatusMonitor.class.getName()) {
+							String ip = "spicyfile";
+							String port = "9911";
+							String builder = null;
+							java.net.URI uri = null;
+							String  downThreadString = sm_temp.getData();
+							try {
+								Object[] options = { "Go To Builder's Page!",
+								"Close" };
+								int ret = JOptionPane.showOptionDialog(null,
+										downThreadString, "Please confirm",
+										JOptionPane.DEFAULT_OPTION,
+										JOptionPane.WARNING_MESSAGE, null, options, options[1]);
+								logger.debug("btn returns " + ret);
+								logger.debug("http://"+ip+ ":" + port + "/" +sm_temp.getProperty("build_link"));
+								if (ret == 0) { // choose "Go To Builder's Page"
+									uri = new URI("http://"+ip+ ":" + port + "/" +sm_temp.getProperty("build_link"));
+									Desktop desktop = Desktop.getDesktop();
+									try {
+										desktop.browse(uri);
+									} catch (IOException e1) {
+										JOptionPane.showMessageDialog(null,
+												"Unable to call web browser!");
+									}
+								}
+							} catch (URISyntaxException e1) {
+								JOptionPane
+										.showMessageDialog(null,
+												"URL seems to be not legal, check the program! " + uri);
+							}
+							
+						}
+					}
+				}
 			}
 		});
 
@@ -281,9 +339,9 @@ public class GuiStatusMonitor implements Observer {
 				case 1: // PAUSE_LABEL pressed
 
 					if (e.getActionCommand().equals(PAUSE_LABEL)) { // pause,
-																	// resume
-																	// share one
-																	// menuitem
+						// resume
+						// share one
+						// menuitem
 						// change label
 						((MenuItem) e.getSource()).setLabel(RESUME_LABEL);
 						// change thread property, get thread_id from father's
@@ -298,10 +356,10 @@ public class GuiStatusMonitor implements Observer {
 					break;
 				case 2: // RESUME_LABEL pressed
 					if (e.getActionCommand().equals(RESUME_LABEL)) { // pause,
-																		// resume
-																		// share
-																		// one
-																		// menuitem
+						// resume
+						// share
+						// one
+						// menuitem
 						((MenuItem) e.getSource()).setLabel(PAUSE_LABEL);
 						// change thread property, get thread_id from father's
 						// label
@@ -318,6 +376,8 @@ public class GuiStatusMonitor implements Observer {
 					long threadID = extractThreadIDFromMenuLabel(((Menu) ((MenuItem) e
 							.getSource()).getParent()).getLabel());
 					removeFromThreadPool(threadID);
+					removeFromDownThreads(threadID);
+					refreshTray();
 					break;
 				case 4:
 					logger.debug(REMEMBER_TARGET_LABEL + " was pressed!");
@@ -328,52 +388,10 @@ public class GuiStatusMonitor implements Observer {
 					}
 				}
 
-				// if (((MenuItem) e.getSource()).getLabel() == PAUSE_LABEL &&
-				// e.getActionCommand().equals(PAUSE_LABEL)) {
-				// //change label
-				// ((MenuItem) e.getSource()).setLabel(RESUME_LABEL);
-				// // change thread property, get thread_id from father's label,
-				// or what else methods?
-				//						
-				// threadLabel = ((Menu)((MenuItem)
-				// e.getSource()).getParent()).getLabel() ;
-				// thread_id = extractThreadIDFromMenuLabel(threadLabel);
-				// pause_thread(thread_id);
-				// logger.debug(PAUSE_LABEL + " was pressed!");
-				//						
-				//						
-				// }else if (((MenuItem) e.getSource()).getLabel() ==
-				// RESUME_LABEL && e.getActionCommand().equals(RESUME_LABEL)) {
-				// //change label
-				// ((MenuItem) e.getSource()).setLabel(PAUSE_LABEL);
-				// // change thread property
-				// threadLabel = ((Menu)((MenuItem)
-				// e.getSource()).getParent()).getLabel() ;
-				// thread_id = extractThreadIDFromMenuLabel(threadLabel);
-				// resume_thread(thread_id);
-				// logger.debug(RESUME_LABEL + " was pressed!");
-				// }else if (((MenuItem) e.getSource()).getLabel() ==
-				// REMOVE_LABEL) {
-				// logger.debug(REMOVE_LABEL + " was pressed!");
-				// removeParentMenu((MenuItem) e.getSource());
-				// long threadID = extractThreadIDFromMenuLabel(((Menu)
-				// ((MenuItem) e
-				// .getSource()).getParent()).getLabel());
-				// removeFromThreadPool(threadID);
-				// } else if (((MenuItem) e.getSource()).getLabel() ==
-				// REMOVE_LABEL) {
-				// logger.debug(REMEMBER_TARGET_LABEL + " was pressed!");
-				// if (((CheckboxMenuItem) e.getSource()).getState() == true){
-				// ((CheckboxMenuItem) e.getSource()).setState(false);
-				// }else{
-				// ((CheckboxMenuItem) e.getSource()).setState(true);
-				// }
-				// }
-				// Q: shall I create a thread status listener as each updating
-				// invokes a lot of jobs to do?!
 				logger
 						.debug("=====Here we are in the listener of subtasks for MenuItem of different thread!");
 			}
+
 		};
 
 		class NewTaskListener implements ActionListener {
@@ -531,7 +549,7 @@ public class GuiStatusMonitor implements Observer {
 			Thread thread = pt2remove.getThisThread();
 			if (thread.getId() == thread_id) {
 				pt2remove.suspend(); // ESP: can use thread.destroy(), test if
-										// null
+				// null
 				// ok
 
 				logger.debug("threadID:" + thread_id + " was suspened! ");
@@ -584,11 +602,18 @@ public class GuiStatusMonitor implements Observer {
 	public void update(Observable target, Object status) {
 		if (status instanceof StatusMessage) {
 			new_status = (StatusMessage) status; // variable for reuse
-
+			
 			SwingUtilities.invokeLater(new Runnable() {
 				public void run() {
 					logger
-							.debug("------update: invoke runnalbe for update GUI! Status :" + new_status.getId() +  " " + new_status.getStatus() +" " + new_status.getData());
+							.debug("------update: invoke runnalbe for update GUI! Status :"
+									+ new_status.getId()
+									+ " "
+									+ new_status.getStatus()
+									+ " "
+									+ new_status.getData()
+									+ "" 
+									+ new_status.getProperty("build_link"));
 					if (new_status != null && new_status.isDown()) {
 						trayIcon.displayMessage("Detected an exception! ",
 								new_status.getData(),
@@ -601,15 +626,11 @@ public class GuiStatusMonitor implements Observer {
 							downThreads.remove(new_status.getId());
 						}
 					}
-					logger.debug("down threads item : " + downThreads.toString());
-					if (tasks.size() == 0 || downThreads.size() == 0) {
-						trayIcon.setImage(greenImage);
-						
-					}else{
-						trayIcon.setImage(redImage);
-					}
-				}
+					logger.debug("down threads item : "
+							+ downThreads.toString());
 
+					refreshTray();
+				}
 			});
 			// old_status = new_status;
 		} else {
@@ -619,6 +640,14 @@ public class GuiStatusMonitor implements Observer {
 		}
 	}
 
+	private void refreshTray() {
+		if (tasks.size() == 0 || downThreads.size() == 0) {
+			trayIcon.setImage(greenImage);
+
+		} else {
+			trayIcon.setImage(redImage);
+		}
+	}
 
 	/**
 	 * To write tasks to a file for reloading next time Note: * I think just
@@ -735,7 +764,7 @@ public class GuiStatusMonitor implements Observer {
 					+ LAST_MONITOR_TARGETS_INI);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace(); // TODO: do not use GUI, pass silently, or use
-									// logging.
+			// logging.
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -858,6 +887,12 @@ public class GuiStatusMonitor implements Observer {
 			return null;
 		}
 	}
+	
+	
+//	public List findResponsibleUsersFromContent(String content){
+//		ArrayList user = new ArrayList();
+//		return user;
+//	}
 }
 
 /**

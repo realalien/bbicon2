@@ -40,6 +40,8 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 	private String ip = null;
 	private String port = null;
 	private String builder = null;
+	// value in the quotation <a href="builders/periodic_builder/builds/116">
+	private String partial_build_link = ""; 
 
 
 	static Logger logger = Logger.getLogger(BuildbotStatusMonitor.class);
@@ -86,9 +88,10 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 					demo_status = "Builder.OK of " + this.ip + ":" + this.port
 							+ " " + this.builder;
 					status_msg = new StatusMessage(this.thisThread.getId(),"Builder.UP", demo_status);
+					status_msg.setCategory(BuildbotStatusMonitor.class.getName());
 					logger
 							.debug("goes to ok, builder's status: "
-									+ this.status);
+									+ this.status + "link:" + this.partial_build_link);
 
 				} else {
 					demo_status = "Builder.DOWN of " + this.ip + ":"
@@ -97,19 +100,24 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 					logger.debug("goes to error, builder's status: "
 							+ this.status);
 					status_msg = new StatusMessage(this.thisThread.getId(),"Builder.DOWN", demo_status);
+					  status_msg.setCategory(BuildbotStatusMonitor.class.getName());
+					  
 				}
-
+				status_msg.setProperties("build_link", this.partial_build_link);  //ESP: if note set in computeBuildStatus(), use this line
 				logger.debug("Builder status: " + this.ip + ", got "
-						+ demo_status);
+						+ demo_status + "link:" + this.partial_build_link);
 				setChanged();
 				notifyObservers(status_msg);
+				logger.error("we should go here");
 			}
 		} catch (InterruptedException e) {
 			logger.error(e.getMessage());
 		}
-
 	}
 
+	/**
+	 * To return T/F for thread's run method, SUG: to implemented as an interface.
+	 * */
 	private boolean buildbotstatus(String pingIp, String port2, String builder2) {
 		try {
 			this.computeBuildStatus();
@@ -124,7 +132,9 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		}
 	}
 
-	// / Compute build status by searching the HTML page for keywords
+	/**
+	 * Compute build status by searching the HTML page for keywords
+	 * */
 	private void computeBuildStatus() throws Exception {
 		URL url = new URL("http://" + this.ip + ":" + this.port
 				+ "/one_box_per_builder?" + this.builder);
@@ -139,6 +149,8 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 			while (s_matcher.find()) {
 				if (l.toLowerCase().contains(this.builder.toLowerCase())) {
 					logger.debug(l + s_matcher.group(1));
+					this.partial_build_link = getPartialLink(l);
+					logger.debug("try to extract partial linke: from : " + l + " got: " + this.partial_build_link);
 					String s = s_matcher.group(1);
 					for (Status st : Status.values()) {
 						if (s.equalsIgnoreCase(st.name())) {
@@ -152,6 +164,23 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		in.close();
 
 		this.status = new_status;
+		
+	}
+	
+	/**
+	 * To extract partial link of build from a line of HTML
+	 * */ 
+	private String getPartialLink(String str){
+
+		String partial_link = null ;
+		Pattern p = Pattern.compile("<a href=\"(.*)\">");
+		Matcher m = p.matcher(str);
+		if (m.find()){
+			partial_link  = m.group(0).substring(9, m.group(0).length()-2);
+			
+			logger.debug("partial link of the build: "+partial_link);
+		}
+		return partial_link;
 	}
 
 }

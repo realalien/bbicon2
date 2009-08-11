@@ -1,7 +1,23 @@
 
 
+*** Tools for monitoring buildbot's builder's status
+
+How to install
+-------------------------------------------
 * Please download and install jre first:
   from http://java.sun.com/javase/downloads/index.jsp
   e.g. 'Java SE Runtime Environment 6u14'  
-* Then copy the executable and the log4j.properties to the directory where you want to put.
-* Create a link to the executable
+* Then copy the executable(RemoteMonitor.jar) 
+  and the log configuration file(log4j.properties) 
+  to the directory where you want to put.
+
+  
+Known Issue:
+--------------------------------------------
+* if a status of DOWN is caught, user will be bought to
+  the webpage of failed build if one clicks the info bubble.
+  But we do not provide the responsible users BECAUSE
+  former unsolved error will make the later submiter to be 
+  blamed.
+  
+  
