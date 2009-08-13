@@ -1,15 +1,38 @@
 
 
-*** Tools for monitoring buildbot's builder's status
+*** Tools for monitoring buildbot's builder's status ***
+
 
 How to install
 -------------------------------------------
 * Please download and install jre first:
-  from http://java.sun.com/javase/downloads/index.jsp
-  e.g. 'Java SE Runtime Environment 6u14'  
+  from http://java.sun.com/javase/downloads/index.jsp 
+  (e.g. 'Java SE Runtime Environment 6u14' )
+  or run .exe from \\spicyfile\CoolStuff\misc\jre-6u15-windows-i586-s.exe
+
 * Then copy the executable(RemoteMonitor.jar) 
   and the log configuration file(log4j.properties) 
+  and the builder configuration file(last_monitor_targets.ini)
   to the directory where you want to put.
+
+* Double click the jar to give it a test run.
+
+
+How To Use:
+--------------------------------------------
+* Double click the jar to give it a test run.
+
+* Application will try to load  the last_monitor_targets.ini
+  at start up. It's the easiest way to configure
+  which builder you want to monitor.
+
+* If you feel annoying when a failure keeps prompting, you can go to
+  pop-up menu(right click the system icon), select 'All Status' menu,
+  choose the task you want to stop prompting, click its 
+  '"-_-i   Cease fire!"' button, later you can '"^_^   Pick me up!"'.
+
+* You can also configure the file logging by using file log4j.properties
+  if you know how-to.
 
   
 Known Issue:
@@ -17,7 +40,19 @@ Known Issue:
 * if a status of DOWN is caught, user will be bought to
   the webpage of failed build if one clicks the info bubble.
   But we do not provide the responsible users BECAUSE
-  former unsolved error will make the later submiter to be 
+  former unsolved error will make the later submitter be
   blamed.
   
+* the configuration file will not take effect until the next
+  restart.
+
+
+For Developers:
+--------------------------------------------
+* Part of the source code is licensed under its individual copyright 
+  information. You can help to add or modify code at 
+  http://github.com/realalien/bbicon2/tree/master
+
+
+maintainer: zhujiacheng@spicyhorse.com
   
