@@ -46,7 +46,7 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 
 	static Logger logger = Logger.getLogger(BuildbotStatusMonitor.class);
 
-	private static Matcher s_matcher = Pattern.compile(
+	private Matcher s_matcher = Pattern.compile(
 			"(success|warn|fail|exception)",
 			Pattern.MULTILINE | Pattern.CASE_INSENSITIVE).matcher("");
 
@@ -108,7 +108,6 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 						+ demo_status + "link:" + this.partial_build_link);
 				setChanged();
 				notifyObservers(status_msg);
-				logger.error("we should go here");
 			}
 		} catch (InterruptedException e) {
 			logger.error(e.getMessage());
@@ -122,8 +121,9 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		try {
 			this.computeBuildStatus();
 		} catch (Exception e) {
-			logger.error("BuildbotStatusMonitor caught an exception.\n"
+			logger.error("BuildbotStatusMonitor caught an exception. Error: \n"
 					+ e.getMessage());
+			return false ;
 		}
 		if (this.status == null || this.status.toString() != "SUCCESS") {
 			return false;
@@ -147,8 +147,9 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		while ((l = in.readLine()) != null) {
 			s_matcher.reset(l);
 			while (s_matcher.find()) {
+				//logger.debug("line and builder found " + this.builder );
 				if (l.toLowerCase().contains(this.builder.toLowerCase())) {
-					logger.debug(l + s_matcher.group(1));
+					//logger.debug("line info:" +l + " \n match info:" + s_matcher.group(1));
 					this.partial_build_link = getPartialLink(l);
 					logger.debug("try to extract partial linke: from : " + l + " got: " + this.partial_build_link);
 					String s = s_matcher.group(1);
@@ -164,7 +165,7 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		in.close();
 
 		this.status = new_status;
-		
+		logger.debug("computerBuildStatus for judging ...." + this.status.toString());
 	}
 	
 	/**
@@ -176,6 +177,8 @@ public class BuildbotStatusMonitor extends MonitorableTask {
 		Pattern p = Pattern.compile("<a href=\"(.*)\">");
 		Matcher m = p.matcher(str);
 		if (m.find()){
+			//logger.debug("str to match: " + str);
+			//logger.debug("match info:" + m.group(0));
 			partial_link  = m.group(0).substring(9, m.group(0).length()-2);
 			
 			logger.debug("partial link of the build: "+partial_link);

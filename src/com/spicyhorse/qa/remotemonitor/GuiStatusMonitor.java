@@ -235,8 +235,8 @@ public class GuiStatusMonitor implements Observer {
 		popup.add(allstatus);
 		popup.addSeparator();
 		popup.add(newTaskItem);
-		newTaskItem.add(newPingTaskItem);
-		newTaskItem.add(newWebappTaskItem);
+		//newTaskItem.add(newPingTaskItem);
+		//newTaskItem.add(newWebappTaskItem);
 		newTaskItem.add(newBuildbotBuildTaskItem);
 		popup.addSeparator();
 		popup.add(aboutItem);
@@ -753,6 +753,9 @@ public class GuiStatusMonitor implements Observer {
 			BufferedReader bw = new BufferedReader(fr);
 			String line;
 			while ((line = bw.readLine()) != null) {
+				if (line.trim().startsWith("#")){
+					continue;
+				}
 				if (line.contains(":::")) {
 					logger.debug("Found a entry: " + line);
 					entries.add(line);
