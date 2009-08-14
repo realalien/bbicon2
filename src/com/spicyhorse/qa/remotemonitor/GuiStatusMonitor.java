@@ -256,7 +256,10 @@ public class GuiStatusMonitor implements Observer {
 
 		trayIcon.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (downThreads.size() == 0) {
+				if(tasks.size() == 0){
+					JOptionPane.showMessageDialog(null, "No monitor task! Please add one.");
+				}
+				else if (tasks.size() != 0 && downThreads.size() == 0) {
 					JOptionPane.showMessageDialog(null, "Everything is OK!");
 				} else {
 					// only goes to the web page if thread is a builder
