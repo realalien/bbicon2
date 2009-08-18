@@ -23,25 +23,44 @@ How To Use:
 * Double click the jar to give it a test run.
 
 * Application will try to load  the last_monitor_targets.ini
-  at start up. It's the easiest way to configure
+  at start-up. It's the easiest way to configure
   which builder you want to monitor.
+  
+* To add a monitoring thread: 
+    Right-click the system tray icon, menu "New Task" -> "BuildBot Build Status Monitor" 
+  To remove a monitoring thread:
+     Right-click the system tray icon, menu "All Task" -> <the thread to be delete>  -> "Kill me!"
+  To pause a monitoring (pause getting a status info):
+     Right-click the system tray icon, menu "All Task" -> <the thread to be delete>  -> "Cease fire!"
+  To resume a monitoring (pause getting a status info):
+     Right-click the system tray icon, menu "All Task" -> <the thread to be delete>  -> "Pick me up!"
 
-* If you feel annoying when a failure keeps prompting, you can go to
+* When a new monitoring thread is created, it will restart next time the application runs,
+  you can avoid monitoring 
+  either by removing record from last_monitor_targets.ini
+  or manually right-click the system tray icon, menu "All Task" -> <the thread to be delete>,
+     deselect the  "Always monitoring."
+
+* (Deprecate: Only prompt once if a failure occurs. Only icon image will change!)
+  If you feel annoying when a failure keeps prompting, you can go to
   pop-up menu(right click the system icon), select 'All Status' menu,
   choose the task you want to stop prompting, click its 
   '"-_-i   Cease fire!"' button, later you can '"^_^   Pick me up!"'.
 
 * You can also configure the file logging by using file log4j.properties
-  if you know how-to.
+  only if you know how-to.
 
   
 Known Issue:
 --------------------------------------------
 * if a status of DOWN is caught, user will be bought to
   the webpage of failed build if one clicks the info bubble.
-  But we do not provide the responsible users BECAUSE
-  former unsolved error will make the later submitter be
-  blamed.
+  But we do not provide the responsible users 
+  BECAUSE
+  a) former unsolved error will make the later submitter be
+     blamed.
+  b) just telling programmer to be cautious if one tries to 
+     commit the local change.
   
 * the configuration file will not take effect until the next
   restart.
@@ -52,7 +71,13 @@ For Developers:
 * Part of the source code is licensed under its individual copyright 
   information. You can help to add or modify code at 
   http://github.com/realalien/bbicon2/tree/master
+  
+* Only BuildbotStausMonitor class is under maintenance, sibling classes are not,
+  but they can be easily modified after the model.  
 
+* The maintainer has no idea or profiling tool to cut short the memory use.
+  it may hurt if your machine have little physical memory left. Any help
+  will be greatly appreciated!
 
 maintainer: zhujiacheng@spicyhorse.com
   

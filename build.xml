@@ -68,6 +68,9 @@
 			<fileset dir="${basedir}">
 				<include name="log4j.properties" />
 			</fileset>
+			<fileset dir="${basedir}">
+				<include name="last_monitor_targets.ini" />
+			</fileset>
 		</copy>
 		
 	</target>

@@ -424,8 +424,8 @@ public class GuiStatusMonitor implements Observer {
 					// add a thread and update GUI
 					String ip = JOptionPane
 							.showInputDialog("IP");
-					String freqInput = JOptionPane
-							.showInputDialog("Frequency (in second)");
+//					String freqInput = JOptionPane
+//							.showInputDialog("Frequency (in second)");
 					String default_website_port = "80";
 					String default_buildbot_port = "9911";
 					String port = null;
@@ -451,11 +451,11 @@ public class GuiStatusMonitor implements Observer {
 
 					// construct basic info to create corresponding thread.
 					long time_out = 5000; // if no assign
-					try {
-						time_out = Long.parseLong(freqInput) * 1000;
-					} catch (NumberFormatException exp) {
+//					try {
+//						time_out = Long.parseLong(freqInput) * 1000;
+//					} catch (NumberFormatException exp) {
 						time_out = 15000;
-					}
+//					}
 					if (ip != null) { // TODO:validate IP
 						StringBuffer data = new StringBuffer();
 						if (item.getLabel()
@@ -489,7 +489,7 @@ public class GuiStatusMonitor implements Observer {
 							if (port != null) {
 								threadInfo = threadInfo + ":" + port;
 							}
-							threadInfo = threadInfo + " freq.:" + freqInput;
+							threadInfo = threadInfo + " freq.:" + time_out;
 							if (builder != null) {
 								threadInfo = threadInfo + " builder name:"
 										+ builder;
@@ -617,12 +617,15 @@ public class GuiStatusMonitor implements Observer {
 									+ new_status.getData()
 									+ "" 
 									+ new_status.getProperty("build_link"));
-					if (new_status != null && new_status.isDown()) {
+					// add thread info to the pool if status not OK!
+					if (new_status != null && new_status.isDown() && !downThreads.containsKey(new_status.getId())) {
 						trayIcon.displayMessage("Detected an exception! ",
 								new_status.getData(),
 								TrayIcon.MessageType.WARNING);
 						downThreads.put(new_status.getId(), new_status);
 					}
+					
+					//remove from downThreads if monitoring thread turns OK!
 					if (new_status != null && new_status.getId() > 0
 							&& new_status.isUp()) {
 						if (downThreads.containsKey(new_status.getId())) {
