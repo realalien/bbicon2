@@ -71,6 +71,9 @@
 			<fileset dir="${basedir}">
 				<include name="last_monitor_targets.ini" />
 			</fileset>
+			<fileset dir="${basedir}">
+				<include name="README" />
+			</fileset>
 		</copy>
 		
 	</target>

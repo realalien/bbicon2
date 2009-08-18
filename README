@@ -1,6 +1,7 @@
 
 
-*** Tools for monitoring buildbot's builder's status ***
+*** Buildbot's Builder Status Monitoring ***
+--- inform you if builder has error in building
 
 
 How to install
